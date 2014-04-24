@@ -21,6 +21,7 @@ int adc_key_in = 0;
 #define btnSELECT 4
 #define btnNONE   5
 #define btnEncodeOK  6
+#define lcdBackLight 10
 
 #define RELAY1   15
 #define RELAY2   16
@@ -70,8 +71,8 @@ void setup() {
 	digitalWrite(RELAY4, HIGH);
 
 	lcd.begin(16, 2);   // start the library
-	pinMode(10, OUTPUT);
-	digitalWrite(10, 1);
+	pinMode(lcdBackLight, OUTPUT);
+	digitalWrite(lcdBackLight, HIGH);
 	lcd.setCursor(0, 0);
 	lcd.print("Push the buttons"); // print a simple message
 //========================================
@@ -103,21 +104,25 @@ void loop() {
 	case btnRIGHT: {
 		lcd.print("RIGHT ");
 		digitalWrite(RELAY1, LOW);
+		digitalWrite(lcdBackLight, HIGH);
 		break;
 	}
 	case btnLEFT: {
 		lcd.print("LEFT   ");
 		digitalWrite(RELAY2, LOW);
+		digitalWrite(lcdBackLight, HIGH);
 		break;
 	}
 	case btnUP: {
 		lcd.print("UP    ");
 		digitalWrite(RELAY3, LOW);
+		digitalWrite(lcdBackLight, HIGH);
 		break;
 	}
 	case btnDOWN: {
 		lcd.print("DOWN  ");
 		digitalWrite(RELAY4, LOW);
+		digitalWrite(lcdBackLight, HIGH);
 		break;
 	}
 	case btnSELECT: {
@@ -126,10 +131,12 @@ void loop() {
 		digitalWrite(RELAY2, HIGH);
 		digitalWrite(RELAY3, HIGH);
 		digitalWrite(RELAY4, HIGH);
+		digitalWrite(lcdBackLight, HIGH);
 		break;
 	}
 	case btnEncodeOK: {
 		lcd.print("EncdOK");
+		digitalWrite(lcdBackLight, LOW);
 		break;
 	}
 
