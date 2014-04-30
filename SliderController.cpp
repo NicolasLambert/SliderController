@@ -1,16 +1,16 @@
 // Do not remove the include below
 #include "SliderController.h"
 
-//==============================================
-//Set Encoder pin
-//==============================================
+// LCD
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+// Set Encoder pin
 const int Encoder_A = 3;            // Incremental Encoder singal A is PD3
 const int Encoder_B = 2;            // Incremental Encoder singal B is PD2
-//const int ledPin    =  13;
-unsigned int Encoder_number = 0;
-int state = 0;
+bool needToRefreshValueOnLCD = false;
+bool needToSaveValueOnEeprom = false;
+bool fistActionStep = false;
 
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
 // define some values used by the panel and buttons
 int lcd_key = 0;
 int adc_key_in = 0;
@@ -23,136 +23,325 @@ int adc_key_in = 0;
 #define btnEncodeOK  6
 #define lcdBackLight 10
 
-#define RELAY1   15
-#define RELAY2   16
-#define RELAY3   17
-#define RELAY4   18
+// Relays
+Relay * const relayTrigger = new Relay(15);
+Relay * const relayBackward = new Relay(16);
+Relay * const relayForward = new Relay(17);
+Relay * const relayStop = new Relay(18);
 
-// read the buttons
-int read_LCD_buttons() {
-	adc_key_in = analogRead(0);
-// read the value from the sensor
-// my buttons when read are centered at these valies: 0, 144, 329, 504, 741
-// we add approx 50 to those values and check to see if we are close
-//if(digitalRead(11)==0) return EncodeOK;
-	if (adc_key_in > 1000)
-		return btnNONE;
-// We make this the 1st option for speed reasons since it will be the most likely result
-// For V1.1 us this threshold
-	if (adc_key_in < 50)
-		return btnLEFT;
-	if (adc_key_in < 150)
-		return btnUP;
-	if (adc_key_in < 250)
-		return btnRIGHT;
-	if (adc_key_in < 450)
-		return btnSELECT;
-	if (adc_key_in < 700)
-		return btnDOWN;
-	if (adc_key_in < 850)
-		return btnEncodeOK;
-// For V1.0 comment the other threshold and use the one below:
-	/*  if (adc_key_in < 50)   return btnRIGHT;
-	 if (adc_key_in < 195)  return btnUP;
-	 if (adc_key_in < 380)  return btnDOWN;
-	 if (adc_key_in < 555)  return btnLEFT;
-	 if (adc_key_in < 790)  return btnSELECT;
-	 */
-	return btnNONE;  // when all others fail, return this...
-}
+// Some delays
+#define PUSH_BUTTON_DELAY    100
+#define WELCOME_STATE_DELAY 1000
+
+// Config values
+DelayParam * const paramStartIn = new DelayParam(&lcd, 0);
+DelayParam * const paramTrigger = new DelayParam(&lcd, 4);
+DelayParam * const paramMove = new DelayParam(&lcd, 8);
+WaitParam * const paramWait = new WaitParam(&lcd, 12, paramStartIn);
+ModeParam * const paramMode = new ModeParam(&lcd, 16);
+WayParam * const paramWay = new WayParam(&lcd);
+
+char const * const stateLabelTriggering = "Triggering";
+char const * const stateLabelMoving = "Moving";
+char const * const stateLabelWaiting = "Waiting";
+
+// States
+WelcomeState * const stateWelcome = new WelcomeState(&lcd);
+SettingsState * const stateSettings1StartIn = new SettingsState(&lcd, "Start in", paramStartIn);
+SettingsState * const stateSettings2Trigger = new SettingsState(&lcd, "Trigger", paramTrigger);
+SettingsState * const stateSettings3Move = new SettingsState(&lcd, "Move", paramMove);
+SettingsState * const stateSettings4Wait = new SettingsState(&lcd, "Wait", paramWait);
+SettingsState * const stateSettings5Mode = new SettingsState(&lcd, "Mode", paramMode);
+SimulateState * const stateSimulate1Triggering = new SimulateState(&lcd, stateLabelTriggering, paramTrigger, paramWay);
+SimulateState * const stateSimulate2Moving = new SimulateState(&lcd, stateLabelMoving, paramMove, paramWay);
+PlayState * const statePlay1Triggering = new PlayState(&lcd, stateLabelTriggering, paramTrigger, paramWay);
+PlayState * const statePlay2Moving = new PlayState(&lcd, stateLabelMoving, paramMove, paramWay);
+PlayState * const statePlay3Waiting = new PlayState(&lcd, stateLabelWaiting, paramWait, paramWay);
+
+// Sequences
+#define SEQ_SETTINGS_SIZE 5
+SettingsState * const seqSettings[SEQ_SETTINGS_SIZE] = { stateSettings1StartIn, stateSettings2Trigger,
+		stateSettings3Move, stateSettings4Wait, stateSettings5Mode };
+#define SEQ_SIMULATE_SIZE 2
+SimulateState * const seqSimulate[SEQ_SIMULATE_SIZE] = { stateSimulate1Triggering, stateSimulate2Moving };
+#define SEQ_PLAY_SIZE 3
+PlayState * const seqPlay[SEQ_PLAY_SIZE] = { statePlay1Triggering, statePlay2Moving, statePlay3Waiting };
+
+// States var
+AbstractSliderState* currentState = stateSettings1StartIn;
+SettingsState* lastSettingsState = stateSettings1StartIn;
+unsigned long timeOfLastActionStateChange = 0;
+
 void setup() {
-	pinMode(RELAY1, OUTPUT);
-	pinMode(RELAY2, OUTPUT);
-	pinMode(RELAY3, OUTPUT);
-	pinMode(RELAY4, OUTPUT);
-	digitalWrite(RELAY1, HIGH);
-	digitalWrite(RELAY2, HIGH);
-	digitalWrite(RELAY3, HIGH);
-	digitalWrite(RELAY4, HIGH);
+#ifdef DEBUG
+	Serial.begin(9600);
+	Serial.println("Start serial port");
+#endif
 
-	lcd.begin(16, 2);   // start the library
+	// Init LCD lib
+	lcd.begin(16, 2);
 	pinMode(lcdBackLight, OUTPUT);
 	digitalWrite(lcdBackLight, HIGH);
-	lcd.setCursor(0, 0);
-	lcd.print("Push the buttons"); // print a simple message
-//========================================
-			//pinMode(11,INPUT);
-// digitalWrite(11, 1);
-			//========================================
+	setState(stateWelcome);
+
+	// Init Encoder
 	pinMode(Encoder_A, INPUT);
 	pinMode(Encoder_B, INPUT);
 	digitalWrite(Encoder_A, 1);
 	digitalWrite(Encoder_B, 1);
-	//========================================
 	attachInterrupt(1, Encoder_san, FALLING);       //interrupts: numbers 0 (on digital pin 2) and 1 (on digital pin 3).
+
+	// Let the welcome state for 1sec
+	delay(WELCOME_STATE_DELAY);
+	// Show first setting state
+	setState(stateSettings1StartIn);
+}
+
+template<class T>
+T * const getNext(T * const array[], int const size, T * const item, bool const isNext) {
+	for (int i = 0; i < size; i++) {
+		if (item == array[i]) {
+			int nextIndex;
+			if (isNext) {
+				nextIndex = i + 1;
+				if (nextIndex >= size) {
+					nextIndex = 0;
+				}
+			} else {
+				nextIndex = i - 1;
+				if (nextIndex < 0) {
+					nextIndex = size - 1;
+				}
+			}
+			return array[nextIndex];
+		}
+	}
+}
+
+SettingsState * const getNext(SettingsState * const state, bool const isNext) {
+	return getNext(seqSettings, SEQ_SETTINGS_SIZE, state, isNext);
+}
+
+SimulateState * const getNext(SimulateState * const state, bool const isNext) {
+	return getNext(seqSimulate, SEQ_SIMULATE_SIZE, state, isNext);
+}
+
+PlayState * const getNext(PlayState * const state, bool const isNext) {
+	return getNext(seqPlay, SEQ_PLAY_SIZE, state, isNext);
+}
+
+bool setState(AbstractSliderState * const newState) {
+	if (newState != currentState) {
+		// Save when we quit a settings state with a modified value
+		if (currentState->getType() == typeState_Settings && needToSaveValueOnEeprom) {
+			((SettingsState*) currentState)->getParam()->save();
+			needToSaveValueOnEeprom = false;
+		}
+		currentState = newState;
+		newState->print();
+		return true;
+	}
+	return false;
+}
+
+bool setState(SettingsState * const newSettingsState) {
+	if (currentState->getType() > typeState_Settings) {
+		// If the previous state was an action state, cancel relays
+		cancelRelays();
+	}
+	if (newSettingsState != lastSettingsState) {
+		lastSettingsState = newSettingsState;
+	}
+	timeOfLastActionStateChange = 0;
+	return setState((AbstractSliderState*) newSettingsState);
+}
+
+bool setState(AbstractActionState * const newActionState) {
+	if (newActionState != currentState) {
+		activateRelays(newActionState);
+		timeOfLastActionStateChange = millis();
+	}
+	return setState((AbstractSliderState*) newActionState);
+}
+
+void activateRelays(AbstractActionState * const newActionState) {
+	if (newActionState->m_label == stateLabelWaiting) {
+		relayStop->switchOnFor(PUSH_BUTTON_DELAY);
+	} else if (newActionState->m_label == stateLabelTriggering) {
+		relayStop->switchOnFor(PUSH_BUTTON_DELAY);
+		relayTrigger->switchOnFor(newActionState->getParam()->getDelayInMs());
+	} else if (newActionState->m_label == stateLabelMoving) {
+		if (paramWay->isGoLeft()) {
+			relayBackward->switchOnFor(PUSH_BUTTON_DELAY);
+		} else {
+			relayForward->switchOnFor(PUSH_BUTTON_DELAY);
+		}
+	}
+}
+
+void manageRelays() {
+	relayTrigger->update();
+	relayBackward->update();
+	relayForward->update();
+	relayStop->update();
+}
+
+void cancelRelays() {
+	relayTrigger->cancel();
+	relayBackward->cancel();
+	relayForward->cancel();
+	relayStop->cancel();
+	relayStop->switchOnFor(PUSH_BUTTON_DELAY);
+}
+
+void readButtonsAndUpdateState() {
+	lcd_key = read_LCD_buttons(); // read the buttons
+
+	// User turn the encoder
+	if (needToRefreshValueOnLCD) {
+		// Go back to settings mode if necessary
+		if (!setState(lastSettingsState)) {
+			// If we are already on settings, refresh only value
+			lastSettingsState->getParam()->print();
+		}
+		needToRefreshValueOnLCD = false;
+	} else if (lcd_key == btnSELECT) {
+		// Turn on/off the LCD backlight
+		if (digitalRead(lcdBackLight) == HIGH) {
+			digitalWrite(lcdBackLight, LOW);
+		} else {
+			digitalWrite(lcdBackLight, HIGH);
+		}
+	} else if (lcd_key != btnNONE) {
+		switch (lcd_key)               // depending on which button was pushed, we perform an action
+		{
+		case btnRIGHT:
+			// Set way and launch sequence
+			paramWay->increase();
+			startSequence();
+			break;
+		case btnLEFT:
+			// Set way and launch sequence
+			paramWay->decrease();
+			startSequence();
+			break;
+		case btnUP:
+			if (currentState == lastSettingsState) {
+				// Go to previous settings state
+				setState(getNext(lastSettingsState, false));
+			} else {
+				// Go to settings mode
+				setState(lastSettingsState);
+			}
+			break;
+		case btnDOWN:
+			if (currentState == lastSettingsState) {
+				// Go to next settings state
+				setState(getNext(lastSettingsState, true));
+			} else {
+				// Go to settings mode
+				setState(lastSettingsState);
+			}
+			break;
+		case btnEncodeOK:
+			AbstractSliderParam* param = lastSettingsState->getParam();
+			if (param->getType() == typeParam_Delay) {
+				// Change unit
+				((DelayParam*) param)->changeUnit(true);
+				needToSaveValueOnEeprom = true;
+				// If the state do not need to be changed
+				if (!setState(lastSettingsState)) {
+					// Then only refresh the param
+					param->print();
+				}
+			} else {
+				setState(lastSettingsState);
+			}
+			break;
+		}
+	}
+}
+
+void startSequence() {
+	if (currentState->getType() == typeState_Settings) {
+		fistActionStep = true;
+		if (paramMode->isSimulate()) {
+			setState(stateSimulate1Triggering);
+		} else if (paramStartIn->getValue() > 0) {
+			setState(statePlay3Waiting);
+		} else {
+			setState(statePlay1Triggering);
+		}
+	} else {
+		paramWay->print();
+	}
+}
+
+void updateSequence() {
+	if (timeOfLastActionStateChange > 0) {
+		AbstractActionState* currentActionState = ((AbstractActionState*) currentState);
+		if (!currentActionState->getParam()->printRemaining(timeOfLastActionStateChange, fistActionStep)) {
+			fistActionStep = false;
+			if (currentState->getType() == typeState_Simulate) {
+				setState(getNext((SimulateState*) currentState, true));
+			} else if (currentState->getType() == typeState_Play) {
+				setState(getNext((PlayState*) currentState, true));
+			}
+		}
+	}
 }
 
 void loop() {
-// lcd.print(millis()/1000);      // display seconds elapsed since power-up
-	if (state == 1) {
-		lcd.clear();
-		lcd.setCursor(9, 1);            // move cursor to second line "1" and 9 spaces over
-		lcd.print(Encoder_number);
-		lcd.setCursor(0, 0);            // move cursor to second line "1" and 9 spaces over
-		lcd.print("Push the buttons"); // print a simple message
-		state = 0;
-	}
-	lcd.setCursor(0, 1);            // move to the begining of the second line
-	lcd_key = read_LCD_buttons();  // read the buttons
-	switch (lcd_key)               // depending on which button was pushed, we perform an action
-	{
-	case btnRIGHT: {
-		lcd.print("RIGHT ");
-		digitalWrite(RELAY1, LOW);
-		digitalWrite(lcdBackLight, HIGH);
-		break;
-	}
-	case btnLEFT: {
-		lcd.print("LEFT   ");
-		digitalWrite(RELAY2, LOW);
-		digitalWrite(lcdBackLight, HIGH);
-		break;
-	}
-	case btnUP: {
-		lcd.print("UP    ");
-		digitalWrite(RELAY3, LOW);
-		digitalWrite(lcdBackLight, HIGH);
-		break;
-	}
-	case btnDOWN: {
-		lcd.print("DOWN  ");
-		digitalWrite(RELAY4, LOW);
-		digitalWrite(lcdBackLight, HIGH);
-		break;
-	}
-	case btnSELECT: {
-		lcd.print("SELECT");
-		digitalWrite(RELAY1, HIGH);
-		digitalWrite(RELAY2, HIGH);
-		digitalWrite(RELAY3, HIGH);
-		digitalWrite(RELAY4, HIGH);
-		digitalWrite(lcdBackLight, HIGH);
-		break;
-	}
-	case btnEncodeOK: {
-		lcd.print("EncdOK");
-		digitalWrite(lcdBackLight, LOW);
-		break;
-	}
-
-	case btnNONE: {
-		lcd.print("NONE  ");
-		break;
-	}
-	}
+	readButtonsAndUpdateState();
+	updateSequence();
+	manageRelays();
 }
 
 void Encoder_san() {
-
 	if (digitalRead(Encoder_B)) {
-		Encoder_number++;
+		lastSettingsState->getParam()->increase();
 	} else {
-		Encoder_number--;
+		lastSettingsState->getParam()->decrease();
 	}
-	state = 1;
+	needToRefreshValueOnLCD = true;
+	needToSaveValueOnEeprom = true;
+}
+
+// ####### Buttons management #######
+
+#define DEBOUNCE_DELAY 50
+int lastButton = btnNONE;
+unsigned long lastButtonTime = 0;
+
+// read the buttons
+int read_LCD_buttons() {
+	adc_key_in = analogRead(0);
+	int newButton = btnNONE;
+	// read the value from the sensor
+	// my buttons when read are centered at these valies: 0, 144, 329, 504, 741
+	// we add approx 50 to those values and check to see if we are close
+	if (adc_key_in <= 1000) {
+		// We make this the 1st option for speed reasons since it will be the most likely result
+		// For V1.1 us this threshold
+		if (adc_key_in < 50)
+			newButton = btnLEFT;
+		else if (adc_key_in < 150)
+			newButton = btnUP;
+		else if (adc_key_in < 250)
+			newButton = btnRIGHT;
+		else if (adc_key_in < 450)
+			newButton = btnSELECT;
+		else if (adc_key_in < 700)
+			newButton = btnDOWN;
+		else if (adc_key_in < 850)
+			newButton = btnEncodeOK;
+	}
+	// Only return button changes
+	unsigned long currentTime = millis();
+	if (newButton != lastButton && currentTime - lastButtonTime > DEBOUNCE_DELAY) {
+		lastButton = newButton;
+		lastButtonTime = currentTime;
+		return newButton;
+	}
+	return btnNONE;
 }

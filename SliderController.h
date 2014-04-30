@@ -6,9 +6,18 @@
 
 #ifndef _SliderController_H_
 #define _SliderController_H_
-#include "Arduino.h"
 //add your includes for the project SliderController here
-#include <LiquidCrystal.h>
+#include "Global.h"
+#include "Arduino.h"
+#include "DelayParam.h"
+#include "WaitParam.h"
+#include "ModeParam.h"
+#include "WayParam.h"
+#include "WelcomeState.h"
+#include "SettingsState.h"
+#include "SimulateState.h"
+#include "PlayState.h"
+#include "Relay.h"
 //end of add your includes here
 #ifdef __cplusplus
 extern "C" {
@@ -18,12 +27,23 @@ void setup();
 #ifdef __cplusplus
 } // extern "C"
 #endif
-
-//add your function definitions for the project SliderController here
-int read_LCD_buttons();
-void Encoder_san();
-
-
-
 //Do not add code below this line
+
+template<class T>
+T * const getNext(T * const array[], int const size, T * const item, bool const isNext);
+SettingsState * const getNext(SettingsState * const state, bool const isNext);
+SimulateState * const getNext(SimulateState * const state, bool const isNext);
+PlayState * const getNext(PlayState * const state, bool const isNext);
+bool setState(AbstractSliderState * const newState);
+bool setState(SettingsState * const newSettingsState);
+bool setState(AbstractActionState * const newActionState);
+void activateRelays(AbstractActionState * const newActionState);
+void manageRelays();
+void cancelRelays();
+void startSequence();
+void readButtonsAndUpdateState();
+void updateSequence();
+void Encoder_san();
+int read_LCD_buttons();
+
 #endif /* _SliderController_H_ */
