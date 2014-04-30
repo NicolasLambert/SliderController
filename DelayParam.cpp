@@ -24,17 +24,27 @@ char const * const DelayParam::getUnitLabel(unsigned int const unit) const {
 	return "?";
 }
 
-void DelayParam::print(unsigned int const value, unsigned int const unit) const {
-	const char* unitLabel = getUnitLabel(unit);
-	int valueSize = value == 0 ? 1 : (((int) log10(value)) + 1);
-	int paddingSize = MAX_PARAM_NB_CHAR - valueSize - strlen(unitLabel);
-	m_lcd->setCursor(11, 1);
+void DelayParam::padding(int paddingSize) const {
 	while (paddingSize > 0) {
 		paddingSize--;
 		m_lcd->print(' ');
 	}
-	m_lcd->print(value);
-	m_lcd->print(unitLabel);
+}
+
+void DelayParam::print(unsigned int const value, unsigned int const unit, const unsigned int slotSize, const unsigned int col, const unsigned int row) const {
+	m_lcd->setCursor(col, row);
+	if (value>0) {
+		char const * const unitLabel = getUnitLabel(unit);
+		padding(slotSize - ((int) log10(value)) - 1 - strlen(unitLabel));
+		m_lcd->print(value);
+		m_lcd->print(unitLabel);
+	} else {
+		padding(slotSize);
+	}
+}
+
+void DelayParam::print(unsigned int const value, unsigned int const unit) const {
+	print(value, unit, MAX_PARAM_NB_CHAR, 11, 1);
 }
 
 void DelayParam::print() const {
@@ -79,20 +89,18 @@ bool DelayParam::printRemaining(const unsigned long beginTime, DelayParam const 
 	unsigned long int currentTime = millis();
 	if (endTime > currentTime) {
 		unsigned long remaining = endTime - currentTime;
-		unsigned int newValue, newUnit;
-		// ms to value and unit
-		if (remaining < MS_IN_ONE_S) {
-			newValue = remaining;
-			newUnit = MILLISECOND;
-		} else if (remaining < MS_IN_ONE_M) {
-			newValue = remaining / MS_IN_ONE_S + 1;
-			newUnit = SECOND;
+		unsigned int nbMs, nbS, nbM;
+
+		nbM = remaining / MS_IN_ONE_M;
+		nbS = (remaining-nbM*MS_IN_ONE_M)/MS_IN_ONE_S;
+		if (nbM==0) {
+			nbMs = remaining-nbM*MS_IN_ONE_M-nbS*MS_IN_ONE_S;
+			print(nbS, SECOND, 3, 8,1);
+			print(nbMs, MILLISECOND, 5, 11, 1);
 		} else {
-			newValue = remaining / MS_IN_ONE_M + 1;
-			newUnit = MINUTE;
+			print(nbM, MINUTE, 4, 9,1);
+			print(nbS, SECOND, 3, 13, 1);
 		}
-		// Then finally print the remaining time
-		print(newValue, newUnit);
 		return true;
 	}
 	return false;

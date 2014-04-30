@@ -13,7 +13,7 @@ WelcomeState::WelcomeState(LiquidCrystal * const lcd) :
 
 void WelcomeState::print() const {
 	m_lcd->setCursor(0, 0);
-	m_lcd->print("Slider    v1.0.1");
+	m_lcd->print("Slider    v1.0.2");
 	m_lcd->setCursor(0, 1);
 	m_lcd->print("Controller");
 }

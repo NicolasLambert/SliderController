@@ -42,7 +42,7 @@ WaitParam * const paramPostMove = new WaitParam(&lcd, 16, paramStartIn);
 ModeParam * const paramMode = new ModeParam(&lcd, 20);
 WayParam * const paramWay = new WayParam(&lcd);
 
-char const * const stateLabelTriggering = "Triggering";
+char const * const stateLabelTriggering = "Click";
 char const * const stateLabelMoving = "Moving";
 char const * const stateLabelWaiting = "Waiting";
 
