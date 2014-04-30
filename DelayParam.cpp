@@ -66,7 +66,7 @@ const unsigned long DelayParam::getDelayInMs(DelayParam const * const param) con
 	Serial.print(" : ");
 	Serial.println(result);
 #else
-	// I really don't know why we need some little instruction here but without it the valu returned is wrong.
+	// I really don't know why we need some little instruction here but without it the value returned is wrong.
 	// It's a shame...
 	delay(1);
 #endif
@@ -95,7 +95,7 @@ bool DelayParam::printRemaining(const unsigned long beginTime, DelayParam const 
 			newValue = remaining / MS_IN_ONE_M + 1;
 			newUnit = MINUTE;
 		}
-		// Then finaly print the remaining time
+		// Then finally print the remaining time
 		print(newValue, newUnit);
 		return true;
 	}
