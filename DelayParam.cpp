@@ -31,9 +31,10 @@ void DelayParam::padding(int paddingSize) const {
 	}
 }
 
-void DelayParam::print(unsigned int const value, unsigned int const unit, const unsigned int slotSize, const unsigned int col, const unsigned int row) const {
+void DelayParam::print(unsigned int const value, unsigned int const unit, const unsigned int slotSize,
+		const unsigned int col, const unsigned int row) const {
 	m_lcd->setCursor(col, row);
-	if (value>0) {
+	if (value > 0) {
 		char const * const unitLabel = getUnitLabel(unit);
 		padding(slotSize - ((int) log10(value)) - 1 - strlen(unitLabel));
 		m_lcd->print(value);
@@ -92,13 +93,13 @@ bool DelayParam::printRemaining(const unsigned long beginTime, DelayParam const 
 		unsigned int nbMs, nbS, nbM;
 
 		nbM = remaining / MS_IN_ONE_M;
-		nbS = (remaining-nbM*MS_IN_ONE_M)/MS_IN_ONE_S;
-		if (nbM==0) {
-			nbMs = remaining-nbM*MS_IN_ONE_M-nbS*MS_IN_ONE_S;
-			print(nbS, SECOND, 3, 8,1);
+		nbS = (remaining - nbM * MS_IN_ONE_M) / MS_IN_ONE_S;
+		if (nbM == 0) {
+			nbMs = remaining - nbM * MS_IN_ONE_M - nbS * MS_IN_ONE_S;
+			print(nbS, SECOND, 3, 8, 1);
 			print(nbMs, MILLISECOND, 5, 11, 1);
 		} else {
-			print(nbM, MINUTE, 4, 9,1);
+			print(nbM, MINUTE, 4, 9, 1);
 			print(nbS, SECOND, 3, 13, 1);
 		}
 		return true;
@@ -220,7 +221,8 @@ void DelayParam::load() {
 		m_value += read * i;
 	}
 	m_unit = EEPROM.read(startAdr++);
-	if (m_unit<MILLISECOND || m_unit>MINUTE || m_value>getMaxValueForCurrentUnit() || m_value<getMinValueForCurrentUnit() || m_value % getStepValueForCurrentUnit()!=0) {
+	if (m_unit < MILLISECOND || m_unit > MINUTE || m_value > getMaxValueForCurrentUnit()
+			|| m_value < getMinValueForCurrentUnit() || m_value % getStepValueForCurrentUnit() != 0) {
 		// value or unit are invalids. It should be the first launch, no value was save, we can use a default value
 		m_value = 1;
 		m_unit = SECOND;

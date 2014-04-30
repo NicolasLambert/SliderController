@@ -44,7 +44,8 @@ private:
 	unsigned int getMaxValueForCurrentUnit() const;
 	unsigned int getStepValueForCurrentUnit() const;
 	void print(unsigned int const value, unsigned int const unit) const;
-	void print(unsigned int const value, unsigned int const unit, const unsigned int slotSize, const unsigned int col, const unsigned int row) const;
+	void print(unsigned int const value, unsigned int const unit, const unsigned int slotSize, const unsigned int col,
+			const unsigned int row) const;
 	void padding(int paddingSize) const;
 	unsigned long const getDelayInMs(DelayParam const * const param) const;
 };

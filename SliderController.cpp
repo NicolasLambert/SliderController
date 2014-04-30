@@ -64,11 +64,12 @@ PlayState * const statePlay4PostMove = new PlayState(&lcd, stateLabelWaiting, pa
 // Sequences
 #define SEQ_SETTINGS_SIZE 6
 SettingsState * const seqSettings[SEQ_SETTINGS_SIZE] = { stateSettings1StartIn, stateSettings2Trigger,
-		stateSettings3PostTrig,stateSettings4Move,stateSettings5PostMove,stateSettings6Mode };
+		stateSettings3PostTrig, stateSettings4Move, stateSettings5PostMove, stateSettings6Mode };
 #define SEQ_SIMULATE_SIZE 2
 SimulateState * const seqSimulate[SEQ_SIMULATE_SIZE] = { stateSimulate1Triggering, stateSimulate2Moving };
 #define SEQ_PLAY_SIZE 4
-PlayState * const seqPlay[SEQ_PLAY_SIZE] = { statePlay1Triggering, statePlay2PostTrig, statePlay3Moving, statePlay4PostMove };
+PlayState * const seqPlay[SEQ_PLAY_SIZE] = { statePlay1Triggering, statePlay2PostTrig, statePlay3Moving,
+		statePlay4PostMove };
 
 // States var
 AbstractSliderState* currentState = stateSettings1StartIn;
@@ -168,7 +169,7 @@ bool setState(AbstractActionState * const newActionState) {
 }
 
 void activateRelays(AbstractActionState * const newActionState) {
-	if (newActionState->m_label == stateLabelWaiting ) {
+	if (newActionState->m_label == stateLabelWaiting) {
 		relayStop->switchOnFor(PUSH_BUTTON_DELAY);
 	} else if (newActionState->m_label == stateLabelTriggering) {
 		relayStop->switchOnFor(PUSH_BUTTON_DELAY);
