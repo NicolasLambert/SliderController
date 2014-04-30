@@ -216,4 +216,9 @@ void DelayParam::load() {
 		m_value += read * i;
 	}
 	m_unit = EEPROM.read(startAdr++);
+	if (m_unit<MILLISECOND || m_unit>MINUTE || m_value>getMaxValueForCurrentUnit() || m_value<getMinValueForCurrentUnit() || m_value % getStepValueForCurrentUnit()!=0) {
+		// value or unit are invalids. It should be the first launch, no value was save, we can use a default value
+		m_value = 1;
+		m_unit = SECOND;
+	}
 }
