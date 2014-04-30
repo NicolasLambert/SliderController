@@ -65,16 +65,12 @@ const unsigned long DelayParam::getDelayInMs(DelayParam const * const param) con
 	Serial.print(getUnitLabel(param->m_unit));
 	Serial.print(" : ");
 	Serial.println(result);
-#else
-	// I really don't know why we need some little instruction here but without it the value returned is wrong.
-	// It's a shame...
-	delay(1);
 #endif
 	return result;
 }
 
 const unsigned long DelayParam::getDelayInMs() const {
-	getDelayInMs(this);
+	return getDelayInMs(this);
 }
 
 bool DelayParam::printRemaining(const unsigned long beginTime, DelayParam const * const param) const {
