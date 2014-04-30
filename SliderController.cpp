@@ -36,9 +36,10 @@ Relay * const relayStop = new Relay(18);
 // Config values
 DelayParam * const paramStartIn = new DelayParam(&lcd, 0);
 DelayParam * const paramTrigger = new DelayParam(&lcd, 4);
-DelayParam * const paramMove = new DelayParam(&lcd, 8);
-WaitParam * const paramWait = new WaitParam(&lcd, 12, paramStartIn);
-ModeParam * const paramMode = new ModeParam(&lcd, 16);
+DelayParam * const paramPostTrig = new DelayParam(&lcd, 8);
+DelayParam * const paramMove = new DelayParam(&lcd, 12);
+WaitParam * const paramPostMove = new WaitParam(&lcd, 16, paramStartIn);
+ModeParam * const paramMode = new ModeParam(&lcd, 20);
 WayParam * const paramWay = new WayParam(&lcd);
 
 char const * const stateLabelTriggering = "Triggering";
@@ -49,23 +50,25 @@ char const * const stateLabelWaiting = "Waiting";
 WelcomeState * const stateWelcome = new WelcomeState(&lcd);
 SettingsState * const stateSettings1StartIn = new SettingsState(&lcd, "Start in", paramStartIn);
 SettingsState * const stateSettings2Trigger = new SettingsState(&lcd, "Trigger", paramTrigger);
-SettingsState * const stateSettings3Move = new SettingsState(&lcd, "Move", paramMove);
-SettingsState * const stateSettings4Wait = new SettingsState(&lcd, "Wait", paramWait);
-SettingsState * const stateSettings5Mode = new SettingsState(&lcd, "Mode", paramMode);
+SettingsState * const stateSettings3PostTrig = new SettingsState(&lcd, "Post-trig", paramPostTrig);
+SettingsState * const stateSettings4Move = new SettingsState(&lcd, "Move", paramMove);
+SettingsState * const stateSettings5PostMove = new SettingsState(&lcd, "Post-move", paramPostMove);
+SettingsState * const stateSettings6Mode = new SettingsState(&lcd, "Mode", paramMode);
 SimulateState * const stateSimulate1Triggering = new SimulateState(&lcd, stateLabelTriggering, paramTrigger, paramWay);
 SimulateState * const stateSimulate2Moving = new SimulateState(&lcd, stateLabelMoving, paramMove, paramWay);
 PlayState * const statePlay1Triggering = new PlayState(&lcd, stateLabelTriggering, paramTrigger, paramWay);
-PlayState * const statePlay2Moving = new PlayState(&lcd, stateLabelMoving, paramMove, paramWay);
-PlayState * const statePlay3Waiting = new PlayState(&lcd, stateLabelWaiting, paramWait, paramWay);
+PlayState * const statePlay2PostTrig = new PlayState(&lcd, stateLabelWaiting, paramPostTrig, paramWay);
+PlayState * const statePlay3Moving = new PlayState(&lcd, stateLabelMoving, paramMove, paramWay);
+PlayState * const statePlay4PostMove = new PlayState(&lcd, stateLabelWaiting, paramPostMove, paramWay);
 
 // Sequences
-#define SEQ_SETTINGS_SIZE 5
+#define SEQ_SETTINGS_SIZE 6
 SettingsState * const seqSettings[SEQ_SETTINGS_SIZE] = { stateSettings1StartIn, stateSettings2Trigger,
-		stateSettings3Move, stateSettings4Wait, stateSettings5Mode };
+		stateSettings3PostTrig,stateSettings4Move,stateSettings5PostMove,stateSettings6Mode };
 #define SEQ_SIMULATE_SIZE 2
 SimulateState * const seqSimulate[SEQ_SIMULATE_SIZE] = { stateSimulate1Triggering, stateSimulate2Moving };
-#define SEQ_PLAY_SIZE 3
-PlayState * const seqPlay[SEQ_PLAY_SIZE] = { statePlay1Triggering, statePlay2Moving, statePlay3Waiting };
+#define SEQ_PLAY_SIZE 4
+PlayState * const seqPlay[SEQ_PLAY_SIZE] = { statePlay1Triggering, statePlay2PostTrig, statePlay3Moving, statePlay4PostMove };
 
 // States var
 AbstractSliderState* currentState = stateSettings1StartIn;
@@ -165,7 +168,7 @@ bool setState(AbstractActionState * const newActionState) {
 }
 
 void activateRelays(AbstractActionState * const newActionState) {
-	if (newActionState->m_label == stateLabelWaiting) {
+	if (newActionState->m_label == stateLabelWaiting ) {
 		relayStop->switchOnFor(PUSH_BUTTON_DELAY);
 	} else if (newActionState->m_label == stateLabelTriggering) {
 		relayStop->switchOnFor(PUSH_BUTTON_DELAY);
@@ -268,7 +271,7 @@ void startSequence() {
 		if (paramMode->isSimulate()) {
 			setState(stateSimulate1Triggering);
 		} else if (paramStartIn->getValue() > 0) {
-			setState(statePlay3Waiting);
+			setState(statePlay4PostMove);
 		} else {
 			setState(statePlay1Triggering);
 		}
