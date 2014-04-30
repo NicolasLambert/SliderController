@@ -39,6 +39,11 @@ void DelayParam::print(unsigned int const value, unsigned int const unit, const 
 		padding(slotSize - ((int) log10(value)) - 1 - strlen(unitLabel));
 		m_lcd->print(value);
 		m_lcd->print(unitLabel);
+	} else if (col >= 11) {
+		char const * const unitLabel = getUnitLabel(unit);
+		padding(slotSize - 1 - strlen(unitLabel));
+		m_lcd->print('0');
+		m_lcd->print(unitLabel);
 	} else {
 		padding(slotSize);
 	}
@@ -127,10 +132,10 @@ unsigned int DelayParam::getMaxValueForCurrentUnit() const {
 	switch (m_unit) {
 	case MILLISECOND:
 		return 990;
-	case MINUTE:
-		return 999;
 	case SECOND:
 		return 59;
+	case MINUTE:
+		return 999;
 	}
 	return 0;
 }
@@ -148,22 +153,22 @@ unsigned int DelayParam::getMinValueForCurrentUnit() const {
 }
 
 void DelayParam::increase() {
-	int newParam = m_value + getStepValueForCurrentUnit();
-	if (newParam > getMaxValueForCurrentUnit()) {
+	int step = getStepValueForCurrentUnit();
+	if (m_value > getMaxValueForCurrentUnit() - step) {
 		changeUnit(true);
 		m_value = this->getMinValueForCurrentUnit();
 	} else {
-		m_value = newParam;
+		m_value += step;
 	}
 }
 
 void DelayParam::decrease() {
-	int newValue = m_value - getStepValueForCurrentUnit();
-	if (newValue < this->getMinValueForCurrentUnit()) {
+	int step = getStepValueForCurrentUnit();
+	if (m_value < this->getMinValueForCurrentUnit() + step) {
 		changeUnit(false);
 		m_value = getMaxValueForCurrentUnit();
 	} else {
-		m_value = newValue;
+		m_value -= step;
 	}
 }
 
