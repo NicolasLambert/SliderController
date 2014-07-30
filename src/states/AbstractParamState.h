@@ -9,7 +9,7 @@
 #define ABSTRACTPARAMSTATE_H_
 
 #include "AbstractSliderState.h"
-#include "AbstractSliderParam.h"
+#include "../param/AbstractSliderParam.h"
 
 #define PADDING_LABEL_SIZE 11
 

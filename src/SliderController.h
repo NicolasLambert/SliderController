@@ -9,15 +9,15 @@
 //add your includes for the project SliderController here
 #include "Global.h"
 #include "Arduino.h"
-#include "DelayParam.h"
-#include "WaitParam.h"
-#include "ModeParam.h"
-#include "WayParam.h"
-#include "WelcomeState.h"
-#include "SettingsState.h"
-#include "SimulateState.h"
-#include "PlayState.h"
-#include "Relay.h"
+#include "param/DelayParam.h"
+#include "param/WaitParam.h"
+#include "param/ModeParam.h"
+#include "param/WayParam.h"
+#include "states/WelcomeState.h"
+#include "states/SettingsState.h"
+#include "states/SimulateState.h"
+#include "states/PlayState.h"
+#include "io/Relay.h"
 //end of add your includes here
 #ifdef __cplusplus
 extern "C" {

@@ -9,8 +9,8 @@
 #define ABSTRACTACTIONSTATE_H_
 
 #include "AbstractParamState.h"
-#include "DelayParam.h"
-#include "WayParam.h"
+#include "../param/DelayParam.h"
+#include "../param/WayParam.h"
 
 class AbstractActionState: public AbstractParamState {
 public:

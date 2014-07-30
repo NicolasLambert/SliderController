@@ -8,7 +8,7 @@
 #ifndef RELAY_H_
 #define RELAY_H_
 
-#include "Global.h"
+#include "../Global.h"
 #include "Arduino.h"
 
 class Relay {

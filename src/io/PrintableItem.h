@@ -7,7 +7,7 @@
 
 #ifndef PRINTABLEITEM_H_
 #define PRINTABLEITEM_H_
-#include "Global.h"
+#include "../Global.h"
 #include "LiquidCrystal.h"
 
 class PrintableItem {

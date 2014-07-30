@@ -9,7 +9,7 @@
 #define SETTINGSSTATE_H_
 
 #include "AbstractParamState.h"
-#include "AbstractSliderParam.h"
+#include "../param/AbstractSliderParam.h"
 #include "EEPROM.h"
 
 class SettingsState: public AbstractParamState {

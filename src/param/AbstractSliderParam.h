@@ -7,7 +7,7 @@
 
 #ifndef ABSTRACTSLIDERPARAM_H_
 #define ABSTRACTSLIDERPARAM_H_
-#include "PrintableItem.h"
+#include "../io/PrintableItem.h"
 #include "EEPROM.h"
 
 #define typeParam_Delay 0

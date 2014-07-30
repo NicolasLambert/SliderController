@@ -7,7 +7,7 @@
 
 #ifndef ABSTRACTSLIDERSTATE_H_
 #define ABSTRACTSLIDERSTATE_H_
-#include "PrintableItem.h"
+#include "../io/PrintableItem.h"
 
 #define typeState_Welcome 0
 #define typeState_Settings 1
